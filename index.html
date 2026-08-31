@@ -4,6 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#0F1410">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Espelho Vocal">
 <meta name="description" content="Espelho Vocal — veja a sua voz em tempo real. Demo do Diagnóstico Vocal.">
 </head>
 <body>
@@ -246,7 +250,8 @@
     <p>Filtros do sistema (cancelamento de eco, supressão de ruído, ganho automático) são <strong>desativados</strong> para medir a voz crua — quando o aparelho permite.</p>
     <p>No modo “Repita a nota”, o som de referência toca e <em>para</em> antes de você cantar — assim o alto-falante não contamina o microfone.</p>
     <p>Afinação exibida com nomes em português e numeração científica (Lá4 = A4 = 440 Hz).</p>
-    <p class="mono">Projeto Don Lotoy · Espelho Vocal demo v0.1 · construído para a Sessão 1</p>
+    <p class="mono" id="hostedLine" hidden></p>
+    <p class="mono">Projeto Don Lotoy · Espelho Vocal demo v0.2 · construído para a Sessão 1</p>
     <button id="btnSheetClose">Fechar</button>
   </div>
 </div>
@@ -420,6 +425,7 @@ var capture=null;            // {mode:'segure'|'repita', frames:[], until, onDon
 var muteDetect=false;        // during reference tone playback
 var wakeLock=null;
 
+var HOSTED="https://purplewarren.github.io/espelho-vocal/";
 var $=function(id){return document.getElementById(id);};
 var trailC=$("trail"), trailX=trailC.getContext("2d");
 var keysC=$("rangekeys"), keysX=keysC.getContext("2d");
@@ -456,6 +462,10 @@ function startMic(){
     if(e && (e.name==="NotAllowedError"||e.name==="PermissionDeniedError")){
       if(window.top!==window.self)
         msg="Este visualizador bloqueia o microfone para páginas incorporadas — não é uma configuração sua. Abra a demo pelo link hospedado, ou abra o arquivo direto no computador.";
+      if(window.top!==window.self && HOSTED.indexOf("http")===0){
+        gerr.innerHTML=msg+' <a href="'+HOSTED+'" target="_blank" rel="noopener" style="color:var(--accent)">Abrir a versão com microfone →</a>';
+        gerr.hidden=false; return;
+      }
       else
         msg="Permissão negada. Toque de novo e permita o microfone — ou verifique Ajustes › navegador › Microfone.";
     }
@@ -809,6 +819,7 @@ document.querySelectorAll(".tabs button").forEach(function(b){
     fitAll();
   });
 });
+if(HOSTED.indexOf("http")===0){ var hl=$("hostedLine"); hl.innerHTML='Versão hospedada: <a href="'+HOSTED+'" target="_blank" rel="noopener" style="color:var(--accent-ink)">'+HOSTED.replace("https://","")+"</a>"; hl.hidden=false; }
 $("btnInfo").addEventListener("click", function(){ $("sheet").hidden=false; });
 $("btnSheetClose").addEventListener("click", function(){ $("sheet").hidden=true; });
 $("sheet").addEventListener("click", function(e){ if(e.target===$("sheet")) $("sheet").hidden=true; });
@@ -821,7 +832,10 @@ $("sheet").addEventListener("click", function(e){ if(e.target===$("sheet")) $("s
     var pp=document.permissionsPolicy||document.featurePolicy;
     if(pp && pp.allowsFeature && pp.allowsFeature("microphone")===false){
       var wb=$("gateWarn");
-      wb.textContent="Aviso: este visualizador não libera o microfone para páginas incorporadas. Para testar cantando, abra a demo pelo link hospedado — ou o arquivo direto no computador.";
+      var wmsg="Aviso: este visualizador não libera o microfone para páginas incorporadas.";
+      if(HOSTED.indexOf("http")===0)
+        wb.innerHTML=wmsg+' <a href="'+HOSTED+'" target="_blank" rel="noopener" style="color:var(--accent)">Abrir a versão com microfone →</a>';
+      else wb.textContent=wmsg+" Para testar cantando, abra a demo pelo link hospedado — ou o arquivo direto no computador.";
       wb.hidden=false;
     }
   }catch(e){}
