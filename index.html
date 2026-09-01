@@ -78,7 +78,7 @@
   .panelbox p.strongline{color:var(--ink);}
 
   .rangewrap{margin-top:4px;}
-  canvas#rangekeys{display:block; width:100%; height:56px;}
+  canvas#rangekeys{display:block; width:100%; height:76px;}
   .rangelabel{font-family:"Spline Sans Mono",monospace; font-size:12.5px; color:var(--muted); margin-top:8px;
     display:flex; justify-content:space-between; align-items:center;}
   .rangelabel .val{color:var(--ink);}
@@ -98,6 +98,22 @@
   #repMsg{color:var(--ink);}
   .steps{font-family:"Spline Sans Mono",monospace; font-size:11px; letter-spacing:.12em;
     text-transform:uppercase; color:var(--muted); margin-bottom:8px;}
+  .stepper{display:flex; margin:2px 0 14px; position:relative;}
+  .stepitem{flex:1; text-align:center; position:relative;}
+  .stepitem::before{content:""; position:absolute; top:13px; left:calc(-50% + 15px); width:calc(100% - 30px);
+    height:1.5px; background:var(--line-strong);}
+  .stepitem:first-child::before{display:none;}
+  .stepitem .dot{width:27px; height:27px; border-radius:50%; border:1.5px solid var(--line-strong);
+    margin:0 auto 5px; display:flex; align-items:center; justify-content:center;
+    font-family:"Spline Sans Mono",monospace; font-size:12.5px; color:var(--muted); background:var(--panel); position:relative; z-index:1;}
+  .stepitem.active .dot{border-color:var(--accent); color:var(--accent); box-shadow:0 0 8px var(--glow);}
+  .stepitem.done .dot{background:var(--accent); border-color:var(--accent); color:#0B2418; font-weight:500;}
+  .stepitem.fail .dot{border-color:var(--err); color:var(--err);}
+  .stepitem .lb{font-family:"Spline Sans Mono",monospace; font-size:9px; letter-spacing:.07em;
+    text-transform:uppercase; color:var(--muted);}
+  .stepitem.active .lb{color:var(--ink);}
+  .rangeline{font-family:"Spline Sans Mono",monospace; font-size:12.5px; color:var(--muted); margin:9px 0 2px;}
+  .rangeline .val{color:var(--ink);}
   .matchres{display:flex; gap:8px; flex-wrap:wrap; margin:8px 0;}
   .chip{font-family:"Spline Sans Mono",monospace; font-size:12px; border:1px solid var(--line-strong);
     border-radius:5px; padding:8px 10px; color:var(--ink); background:var(--panel);}
@@ -138,7 +154,7 @@
   <header class="top">
     <div>
       <div class="wordmark">Diagnóstico Vocal<span class="dot">.</span></div>
-      <div class="tagline">Espelho Vocal · demo v0.1</div>
+      <div class="tagline">Espelho Vocal · demo v0.3</div>
     </div>
     <button class="infobtn" id="btnInfo" aria-label="Informações técnicas">ⓘ</button>
   </header>
@@ -169,15 +185,16 @@
 
   <!-- ESPELHO -->
   <div class="panelbox" id="panel-espelho">
-    <h2>Sua extensão, pintada ao vivo</h2>
+    <h2>O piano da sua extensão vocal</h2>
     <div class="rangewrap">
       <canvas id="rangekeys"></canvas>
-      <div class="rangelabel">
-        <span>Extensão até agora: <span class="val" id="rangeVal">—</span></span>
-        <button id="btnRangeReset" aria-label="Recomeçar extensão">↺ zerar</button>
-      </div>
+      <div class="rangeline">Extensão até agora: <span class="val" id="rangeVal">—</span></div>
     </div>
-    <p style="margin-top:10px">Cante notas graves e agudas — <em>sem forçar</em> — e veja o teclado se pintar.</p>
+    <div class="btnrow">
+      <button class="primary" id="btnEspelho" style="flex:2">Cantar</button>
+      <button id="btnRangeReset" aria-label="Recomeçar extensão" style="flex:1">↺ zerar</button>
+    </div>
+    <p style="margin-top:10px">Toque em <strong>Cantar</strong> e explore notas graves e agudas — <em>sem forçar</em> — para pintar o seu piano.</p>
   </div>
 
   <!-- SEGURE -->
@@ -204,7 +221,12 @@
   <!-- REPITA -->
   <div class="panelbox" id="panel-repita" hidden>
     <h2>Repita a nota</h2>
-    <div class="steps" id="repSteps">preparação</div>
+    <div class="stepper" id="repStepper" aria-label="Etapas da atividade">
+      <div class="stepitem active" data-step="0"><div class="dot">•</div><div class="lb">Sua nota</div></div>
+      <div class="stepitem" data-step="1"><div class="dot">1</div><div class="lb">Nota 1</div></div>
+      <div class="stepitem" data-step="2"><div class="dot">2</div><div class="lb">Nota 2</div></div>
+      <div class="stepitem" data-step="3"><div class="dot">3</div><div class="lb">Nota 3</div></div>
+    </div>
     <div id="repBody">
       <p id="repMsg">Primeiro, me mostre uma nota confortável sua: 2 segundos de <strong>“Aaah”</strong>.</p>
       <div class="matchres" id="repChips"></div>
@@ -251,7 +273,7 @@
     <p>No modo “Repita a nota”, o som de referência toca e <em>para</em> antes de você cantar — assim o alto-falante não contamina o microfone.</p>
     <p>Afinação exibida com nomes em português e numeração científica (Lá4 = A4 = 440 Hz).</p>
     <p class="mono" id="hostedLine" hidden></p>
-    <p class="mono">Projeto Don Lotoy · Espelho Vocal demo v0.2 · construído para a Sessão 1</p>
+    <p class="mono">Projeto Don Lotoy · Espelho Vocal demo v0.3 · construído para a Sessão 1</p>
     <button id="btnSheetClose">Fechar</button>
   </div>
 </div>
@@ -423,6 +445,14 @@ var centerMidi=57, centerTarget=57;
 var stride=1, frameCount=0, procTimes=[];
 var capture=null;            // {mode:'segure'|'repita', frames:[], until, onDone}
 var muteDetect=false;        // during reference tone playback
+var espelhoOn=false, freezeT=0, idleShown=false;
+function isDisplayActive(){ return capture!==null || (mode==="espelho" && espelhoOn); }
+function setIdleReadout(){
+  var nb=$("noteBig"), dl=$("dataLine"), nd=$("needle");
+  nb.textContent="—"; nb.classList.add("dim");
+  dl.textContent = mode==="espelho" ? "toque em Cantar para começar" : "use o botão abaixo";
+  nd.classList.remove("good"); nd.style.left="50%";
+}
 var wakeLock=null;
 
 var HOSTED="https://purplewarren.github.io/espelho-vocal/";
@@ -513,7 +543,7 @@ function loop(){
   if(!running) return;
   frameCount++;
   var t=now();
-  if(frameCount%stride===0 && !muteDetect){
+  if(frameCount%stride===0 && !muteDetect && isDisplayActive()){
     var t0=performance.now();
     if(analyser.getFloatTimeDomainData) analyser.getFloatTimeDomainData(buf);
     else { var bb=new Uint8Array(buf.length); analyser.getByteTimeDomainData(bb);
@@ -530,16 +560,17 @@ function loop(){
       midi=smoother(midiFromFreq(r.freq));
       lastVoiced={t:t, midi:midi, clarity:r.clarity, freq:freqFromMidi(midi)};
       centerTarget=midi;
-      noteVisit(midi, r.clarity);
+      if(mode==="espelho" && espelhoOn) noteVisit(midi, r.clarity);
       if(capture) capture.frames.push({t:t, midi:midi});
     }
     frames.push({t:t, midi:midi, clarity:r.clarity});
     if(frames.length>640) frames.splice(0, frames.length-640);
     updateReadout(voiced?{midi:midi, freq:freqFromMidi(midi)}:null, t);
   }
-  if(capture && t>=capture.until){ var c=capture; capture=null; c.onDone(c.frames); }
+  if(capture && t>=capture.until){ var c=capture; capture=null; freezeT=t; c.onDone(c.frames); }
+  if(!isDisplayActive()){ if(!idleShown){ setIdleReadout(); idleShown=true; } } else idleShown=false;
   centerMidi+= (centerTarget-centerMidi)*0.06;
-  drawTrail(t);
+  drawTrail(isDisplayActive()?t:(freezeT||t), isDisplayActive());
   if(mode==="espelho") drawKeys();
   requestAnimationFrame(loop);
 }
@@ -566,13 +597,13 @@ function updateReadout(v, t){
 /* ---------------- trail drawing ---------------- */
 var SPAN=24; /* semitones visible */
 function yOf(midi,h){ return h*0.5 - (midi-centerMidi)*(h/SPAN); }
-function drawTrail(t){
+function drawTrail(t, active){
   var w=trailC.width, h=trailC.height;
   if(!w) return;
   trailX.clearRect(0,0,w,h);
   trailX.fillStyle=COL.bg; trailX.fillRect(0,0,w,h);
   var lo=Math.floor(centerMidi-SPAN/2), hi=Math.ceil(centerMidi+SPAN/2);
-  var nearest=lastVoiced && (t-lastVoiced.t<0.4) ? Math.round(lastVoiced.midi) : null;
+  var nearest=(active && lastVoiced && (t-lastVoiced.t<0.4)) ? Math.round(lastVoiced.midi) : null;
   var inTune=nearest!==null && Math.abs((lastVoiced.midi-nearest)*100)<=20;
   for(var m=lo;m<=hi;m++){
     var y=yOf(m,h);
@@ -597,6 +628,7 @@ function drawTrail(t){
   var win=7, R=12*DPR, span=w-R;
   trailX.lineWidth=2*DPR; trailX.lineJoin="round"; trailX.lineCap="round";
   trailX.strokeStyle=COL.accent;
+  trailX.globalAlpha=active?1:0.35;
   trailX.beginPath();
   var pen=false, prevMidi=null;
   for(var i=0;i<frames.length;i++){
@@ -609,8 +641,9 @@ function drawTrail(t){
     prevMidi=f.midi;
   }
   trailX.stroke();
+  trailX.globalAlpha=1;
   /* head dot */
-  if(lastVoiced && t-lastVoiced.t<0.25){
+  if(active && lastVoiced && t-lastVoiced.t<0.25){
     var hx=w-R-((t-lastVoiced.t)/win)*span, hy=yOf(lastVoiced.midi,h);
     trailX.save(); trailX.shadowColor=COL.accent; trailX.shadowBlur=(inTune?14:8)*DPR;
     trailX.fillStyle=COL.accent;
@@ -625,7 +658,7 @@ var rangeMin=null, rangeMax=null;
 function noteVisit(midi, clarity){
   if(clarity<0.93) return;
   var n=Math.round(midi);
-  if(n<36||n>84) return;
+  if(n<21||n>108) return;
   visits[n]=(visits[n]||0)+1;
   if(visits[n]===6){
     if(rangeMin===null||n<rangeMin) rangeMin=n;
@@ -634,24 +667,50 @@ function noteVisit(midi, clarity){
     $("rangeVal").textContent = rangeMin===rangeMax ? d1.pt : d1.pt+" → "+d2.pt+" · "+(rangeMax-rangeMin)+" semitons";
   }
 }
+$("btnEspelho").addEventListener("click", function(){
+  espelhoOn=!espelhoOn;
+  if(!espelhoOn) freezeT=now();
+  this.textContent = espelhoOn ? "Pausar" : "Cantar";
+  this.classList[espelhoOn?"remove":"add"]("primary");
+});
 $("btnRangeReset").addEventListener("click", function(){
   visits={}; rangeMin=null; rangeMax=null; $("rangeVal").textContent="—";
 });
 function drawKeys(){
   var w=keysC.width, h=keysC.height; if(!w) return;
   keysX.clearRect(0,0,w,h);
-  var lo=36, hi=84, nkeys=hi-lo+1;
-  var kw=w/nkeys;
-  for(var m=lo;m<=hi;m++){
-    var i=m-lo, x=i*kw;
+  var lo=21, hi=108, nk=hi-lo+1, kw=w/nk;   /* A0 → C8: the whole piano */
+  var labelH=12*DPR, keyH=h-labelH;
+  function keyRect(m){
     var pc=((m%12)+12)%12;
     var black=(pc===1||pc===3||pc===6||pc===8||pc===10);
-    var vis=visits[m]>=6;
-    keysX.fillStyle = vis ? COL.accent : (black?"#10150F":"#232B24");
-    keysX.fillRect(x+0.5, black?0:h*0.12, kw-1, black?h*0.55:h*0.82);
-    if(pc===0 && x+22*DPR<w){
-      keysX.fillStyle=COL.faint; keysX.font=(8.5*DPR)+"px 'Spline Sans Mono', monospace";
-      keysX.fillText("Dó"+(Math.floor(m/12)-1), x+1, h-2);
+    return {x:(m-lo)*kw, y:black?0:keyH*0.14, w:Math.max(0.8,kw-0.5), h:black?keyH*0.55:keyH*0.86, black:black};
+  }
+  for(var m=lo;m<=hi;m++){
+    var k=keyRect(m);
+    keysX.fillStyle = k.black?"#10150F":"#232B24";
+    keysX.fillRect(k.x+0.25, k.y, k.w, k.h);
+  }
+  if(rangeMin!==null && rangeMax!==null){
+    var x1=(rangeMin-lo)*kw, x2=(rangeMax-lo+1)*kw;
+    keysX.fillStyle="rgba(76,195,138,.18)";
+    keysX.fillRect(x1, 0, x2-x1, keyH);
+    keysX.fillStyle=COL.accent;
+    keysX.fillRect(x1, 0, 1.5*DPR, keyH);
+    keysX.fillRect(x2-1.5*DPR, 0, 1.5*DPR, keyH);
+  }
+  for(var m2=lo;m2<=hi;m2++){
+    if(visits[m2]>=6){
+      var k2=keyRect(m2);
+      keysX.fillStyle=COL.accent;
+      keysX.fillRect(k2.x+0.25, k2.y, k2.w, k2.h);
+    }
+  }
+  keysX.fillStyle=COL.faint; keysX.font=(8.5*DPR)+"px 'Spline Sans Mono', monospace";
+  for(var m3=lo;m3<=hi;m3++){
+    if(((m3%12)+12)%12===0){
+      var lx=(m3-lo)*kw;
+      if(lx+18*DPR<w) keysX.fillText("Dó"+(Math.floor(m3/12)-1), lx, h-2);
     }
   }
 }
@@ -727,9 +786,20 @@ function drawSpark(fr, m){
 
 /* ---------------- REPITA ---------------- */
 var rep={stage:0, comfort:null, round:0, targets:[], results:[]};
+function stepSet(i, state){
+  var el=document.querySelector('#repStepper .stepitem[data-step="'+i+'"]');
+  if(!el) return;
+  el.classList.remove("active","done","fail");
+  var d=el.querySelector(".dot");
+  if(state==="active"){ el.classList.add("active"); d.textContent=i===0?"•":String(i); }
+  else if(state==="done"){ el.classList.add("done"); d.textContent="✓"; }
+  else if(state==="fail"){ el.classList.add("fail"); d.textContent="✗"; }
+  else { d.textContent=i===0?"•":String(i); }
+}
+function stepperReset(){ for(var i=0;i<4;i++) stepSet(i, i===0?"active":"pending"); }
 function repReset(){
   rep={stage:0, comfort:null, round:0, targets:[], results:[]};
-  $("repSteps").textContent="preparação";
+  stepperReset();
   $("repMsg").innerHTML='Primeiro, me mostre uma nota confortável sua: 2 segundos de <strong>“Aaah”</strong>.';
   $("repChips").innerHTML="";
   var b=$("btnRep"); b.textContent="Cantar nota confortável"; b.disabled=false;
@@ -741,27 +811,30 @@ $("btnRep").addEventListener("click", function(){
     b.disabled=true; $("repMsg").textContent="Cantando… (2s)";
     startCapture(2.2, function(fr){
       var e=matchError(fr, 0);
-      if(!e){ $("repMsg").textContent="Não captei — tente de novo."; b.disabled=false; return; }
+      if(!e){ stepSet(0,"fail"); $("repMsg").textContent="Não captei a sua nota — tente de novo, mais perto do microfone."; b.textContent="Cantar nota confortável"; b.disabled=false; return; }
+      stepSet(0,"done");
       rep.comfort=Math.round(e.medianMidi);
       var c=Math.max(40, Math.min(81, rep.comfort));
       rep.targets=[c, Math.min(84,c+3), Math.max(36,c-2)];
       rep.stage=1; rep.round=0;
       var d=describeMidi(rep.comfort);
       $("repMsg").innerHTML="Sua região confortável: <strong>"+d.pt+"</strong>. Agora, 3 notas: ouça cada uma e repita.";
-      $("repSteps").textContent="nota 1 de 3";
+      stepSet(1,"active");
       b.textContent="Ouvir a nota 1"; b.disabled=false;
     });
   } else if(rep.stage===1){
     b.disabled=true;
+    stepSet(rep.round+1,"active");
     var target=rep.targets[rep.round];
-    playTone(freqFromMidi(target), 1.2, function(){
+    playTone(freqFromMidi(target), 1.4, function(){
       $("repMsg").textContent="Sua vez — repita a nota!";
       startCapture(1.9, function(fr){
         var e=matchError(fr, target);
         var chip=document.createElement("span"); chip.className="chip";
         var td=describeMidi(target);
-        if(!e){ chip.textContent=td.pt+" · não captei"; }
+        if(!e){ chip.textContent=td.pt+" · não captei"; stepSet(rep.round+1,"fail"); }
         else{
+          stepSet(rep.round+1,"done");
           var ac=Math.abs(e.cents);
           var tag = ac<=25 ? '<span class="ok">acertou</span>' : (ac<=60?"quase":"longe");
           chip.innerHTML=td.pt+" · "+(e.cents>=0?"+":"")+e.cents+"¢ · "+tag;
@@ -770,11 +843,11 @@ $("btnRep").addEventListener("click", function(){
         $("repChips").appendChild(chip);
         rep.round++;
         if(rep.round<3){
-          $("repSteps").textContent="nota "+(rep.round+1)+" de 3";
+          stepSet(rep.round+1,"active");
           $("repMsg").textContent="Pronto para a próxima?";
           b.textContent="Ouvir a nota "+(rep.round+1); b.disabled=false;
         } else {
-          rep.stage=2; $("repSteps").textContent="resultado";
+          rep.stage=2;
           if(rep.results.length){
             var avg=Math.round(rep.results.reduce(function(a,x){return a+x;},0)/rep.results.length);
             var msg;
@@ -791,18 +864,19 @@ $("btnRep").addEventListener("click", function(){
 });
 function playTone(freq, dur, onEnd){
   muteDetect=true;
-  var o1=ctx.createOscillator(), o2=ctx.createOscillator(), g=ctx.createGain();
-  o1.frequency.value=freq; o2.frequency.value=freq*2;
-  o1.type="sine"; o2.type="sine";
-  var g2=ctx.createGain(); g2.gain.value=0.18;
-  o1.connect(g); o2.connect(g2); g2.connect(g);
+  var g=ctx.createGain();
+  var parts=[[1,0.62],[2,0.30],[3,0.14]], oscs=[];
+  for(var i=0;i<parts.length;i++){
+    var o=ctx.createOscillator(); o.type="sine"; o.frequency.value=freq*parts[i][0];
+    var pg=ctx.createGain(); pg.gain.value=parts[i][1];
+    o.connect(pg); pg.connect(g); oscs.push(o);
+  }
   g.gain.setValueAtTime(0.0001, ctx.currentTime);
-  g.gain.exponentialRampToValueAtTime(0.5, ctx.currentTime+0.04);
-  g.gain.setValueAtTime(0.5, ctx.currentTime+dur-0.15);
+  g.gain.exponentialRampToValueAtTime(0.85, ctx.currentTime+0.035);
+  g.gain.setValueAtTime(0.85, ctx.currentTime+dur-0.14);
   g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime+dur);
   g.connect(ctx.destination);
-  o1.start(); o2.start();
-  o1.stop(ctx.currentTime+dur+0.02); o2.stop(ctx.currentTime+dur+0.02);
+  for(var j=0;j<oscs.length;j++){ oscs[j].start(); oscs[j].stop(ctx.currentTime+dur+0.02); }
   setTimeout(function(){ muteDetect=false; smoother=makeSmoother(5); onEnd(); }, dur*1000+250);
 }
 
@@ -813,6 +887,8 @@ document.querySelectorAll(".tabs button").forEach(function(b){
     document.querySelectorAll(".tabs button").forEach(function(x){ x.setAttribute("aria-selected", x===b?"true":"false"); });
     ["espelho","segure","repita"].forEach(function(m){ $("panel-"+m).hidden=(m!==mode); });
     clearSegure(); capture=null; $("countdown").hidden=true;
+    espelhoOn=false; freezeT=now(); idleShown=false;
+    var be=$("btnEspelho"); be.textContent="Cantar"; be.classList.add("primary");
     $("segureRun").hidden=true;
     if(mode==="segure" && $("segureDone").hidden) $("segureIdle").hidden=false;
     if(mode==="repita" && rep.stage===0) repReset();
